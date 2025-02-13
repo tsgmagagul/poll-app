@@ -11,7 +11,7 @@ type Option = {
 
 export default function Home() {
   const [options, setOptions] = useState<Option[]>([
-    { id: "deepseek", label: "Deepseek", votes: 0 },
+    { id: "deep seek", label: "Deepseek", votes: 0 },
     { id: "chatgpt", label: "ChatGPT", votes: 0 },
     { id: "cursor", label: "Copilot", votes: 0 },
     { id: "cursor", label: "Meta", votes: 0 },
@@ -39,8 +39,7 @@ export default function Home() {
                 </span>
               </button>
               <motion.div
-                initial={{ width: "0%" }}
-                animate={{ width: `${(option.votes / totalVotes) * 100 || 0}%` }}
+                initial={{ width: "0%" }
                 transition={{ duration: 0.5 }}
                 className="absolute left-0 top-0 h-full bg-purple-300 rounded-lg opacity-50 z-0"
               />
