@@ -40,7 +40,7 @@ export default function Home() {
               </button>
               <motion.div
                 initial={{ width: "0%" }}
-                animate={{ width: `${(option.votes / totalVotes) * 100 || 0}%` }}
+                
                 transition={{ duration: 0.5 }}
                 className="absolute left-0 top-0 h-full bg-purple-300 rounded-lg opacity-50 z-0"
               />
