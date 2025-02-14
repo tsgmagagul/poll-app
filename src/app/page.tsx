@@ -10,15 +10,14 @@ type Option = {
 };
 
 export default function Home() {
-  const [options, setOptions] = useState<Option[]>([
+  const [options] = useState<Option[]>([
     { id: "deepseek", label: "Deepseek", votes: 0 },
     { id: "chatgpt", label: "ChatGPT", votes: 0 },
     { id: "cursor", label: "Copilot", votes: 0 },
     { id: "cursor", label: "Meta", votes: 0 },
     { id: "cursor", label: "Gemini", votes: 0 },
   ]);
-  const totalVotes = options.reduce((sum, option) => sum + option.votes, 0)
-
+ 
 
   return (
     <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4">

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardTitle } from "../components/ui/card";
 import { supabase } from "../lib/supabaseClient";
 import Link from "next/link";
