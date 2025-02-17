@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardTitle } from "../components/ui/card";
 import { supabase } from "../lib/supabaseClient";
-import Link from "next/link";
+
 
 const CreatePoll = () => {
   const [question, setQuestion] = useState<string>("");
@@ -49,7 +49,7 @@ const CreatePoll = () => {
 
   return (
     <div className="p-4 min-h-screen bg-zinc-100 flex flex-col items-center justify-center">
-      <Link href={"/viewpoll"}>View Poll</Link>
+    
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
         <h1 className="text-center text-xl font-bold mb-6">Create New Poll</h1>
         
@@ -57,7 +57,7 @@ const CreatePoll = () => {
           placeholder="Add title"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          className="p-2 border rounded w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="p-2 border rounded w-full mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
 
         <div className="flex gap-2 mb-4">
@@ -65,13 +65,13 @@ const CreatePoll = () => {
             placeholder="Enter option"
             value={currentOption}
             onChange={(e) => setCurrentOption(e.target.value)}
-            className="p-2 border rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-2 border rounded w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <button
             onClick={addOption}
-            className="bg-zinc-950 text-white p-2 rounded hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-purple-600 text-white p-2 rounded hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            Add Option
+            Add 
           </button>
         </div>
 
@@ -95,7 +95,7 @@ const CreatePoll = () => {
 
           <button
             type="submit"
-            className="mt-4 p-2 bg-blue-500 text-white rounded w-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-4 p-2 bg-purple-600 text-white rounded w-full hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
 
             Submit Poll

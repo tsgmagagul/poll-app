@@ -1,53 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion"
+import Image from "next/image";
 
-type Option = {
-  id: string;
-  label: string;
-  votes: number;
-};
 
 export default function Home() {
-  const [options] = useState<Option[]>([
-    { id: "deepseek", label: "Deepseek", votes: 0 },
-    { id: "chatgpt", label: "ChatGPT", votes: 0 },
-    { id: "cursor", label: "Copilot", votes: 0 },
-    { id: "cursor", label: "Meta", votes: 0 },
-    { id: "cursor", label: "Gemini", votes: 0 },
-  ]);
  
 
   return (
-    <div className="min-h-screen bg-zinc-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-      {/* eslint-disable-next-line react/no-unescaped-entities */}
-<label className="block mb-4 text-zinc-700">
-  Which AI tool do you prefer?
-</label>
-        <div className="space-y-4">
-          {options.map((option) => (
-            <div key={option.id} className="relative">
-              <button
-                className="w-full text-left p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors duration-200 ease-in-out"
-              >
-                <span className="font-medium text-purple-900">{option.label}</span>
-                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-700">
-                  {option.votes} votes
-                </span>
-              </button>
-              <motion.div
-                initial={{ width: "0%" }}
-                
-                transition={{ duration: 0.5 }}
-                className="absolute left-0 top-0 h-full bg-purple-300 rounded-lg opacity-50 z-0"
-              />
-            </div>
-          ))}
+    <div className="min-h-screen flex flex-col">
+      {/* Hero Section */}
+      <div className="relative h-[60vh] flex items-center justify-center">
+     
+
+<Image
+  src="/images/background.jpg"
+  alt="AI Background"
+  layout="fill"
+  objectFit="cover"
+  className="z-0"
+/>;
+        <div className="z-10 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+          Welcome to Quick Poll Website!
+          </h1>
+          <p className="text-xl md:text-2xl text-white mb-8">
+          This is a simple polling application.
+          </p>
+          <a
+            href="/createpoll"
+            className="bg-purple-600 text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-purple-700 transition-colors duration-300"
+          >
+            Vote Now
+          </a>
         </div>
-       
       </div>
+      <div className="flex justify-between gap-4 p-6 bg-purple-50">
+  {/* Card 1 */}
+  <div className="border border-zinc-500 shadow-sm rounded-lg p-4 w-1/4">
+    
+    <Image
+     src="/images/picture1.jpg"
+     alt="Placeholder"
+     className="w-full h-48 object-cover rounded-md"
+    />
+    <h3 className="mt-2 text-lg font-semibold text-center">Create Poll</h3>
+    
+  </div>
+
+  {/* Card 2 */}
+  <div className="border border-zinc-500 shadow-sm rounded-lg p-4 w-1/4">
+    <Image
+      src="/images/picture2.jpg"
+      alt="Placeholder"
+      className="w-full h-48 object-cover rounded-md"
+    />
+    <h3 className="mt-2 text-lg font-semibold text-center">Vote</h3>
+   
+  </div>
+
+  {/* Card 3 */}
+  <div className="border border-zinc-500 shadow-sm rounded-lg p-4 w-1/4">
+    <Image
+      src="/images/picture3.jpg"
+      alt="Placeholder"
+      className="w-full h-48 object-cover rounded-md"
+    />
+    <h3 className="mt-2 text-lg font-semibold text-center">View Visuals</h3>
+   
+  </div>
+</div>
+     
     </div>
-  )
+  );
 }
