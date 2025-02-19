@@ -30,7 +30,7 @@ export default function Home() {
             href="/createpoll"
             className="bg-purple-600 text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-purple-700 transition-colors duration-300"
           >
-            Vote Now
+            create poll
           </a>
         </div>
       </div>
@@ -41,6 +41,8 @@ export default function Home() {
     <Image
      src="/images/picture1.jpg"
      alt="Placeholder"
+    
+  width={500} height={300}
      className="w-full h-48 object-cover rounded-md"
     />
     <h3 className="mt-2 text-lg font-semibold text-center">Create Poll</h3>
@@ -52,6 +54,7 @@ export default function Home() {
     <Image
       src="/images/picture2.jpg"
       alt="Placeholder"
+      width={500} height={300}
       className="w-full h-48 object-cover rounded-md"
     />
     <h3 className="mt-2 text-lg font-semibold text-center">Vote</h3>
@@ -63,6 +66,7 @@ export default function Home() {
     <Image
       src="/images/picture3.jpg"
       alt="Placeholder"
+      width={500} height={300}
       className="w-full h-48 object-cover rounded-md"
     />
     <h3 className="mt-2 text-lg font-semibold text-center">View Visuals</h3>

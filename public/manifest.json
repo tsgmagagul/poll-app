@@ -1,20 +1,20 @@
 {
-    "name": "My PWA App",
-    "short_name": "PWA",
-    "description": "A Next.js PWA example",
+    "name": "QuickPoll",
+    "short_name": "Quick",
+    "description": "A Nexj js Voting Poll app",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
     "icons": [
         {
-            "src": "/icons/icon-192x192.png",
-            "sizes": "192x192",
+            "src": "/images/QuickPoll.png",
+            "sizes": "500x500",
             "type": "image/png"
         },
         {
-            "src": "/icons/icon-512x512.png",
-            "sizes": "512x512",
+            "src": "/images/icon2.png",
+            "sizes": "438x438",
             "type": "image/png"
         }
     ]

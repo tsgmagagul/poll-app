@@ -4,19 +4,19 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { motion } from "framer-motion";
 
+// Define Poll type
 interface Poll {
   id: number;
   title: string;
   options: string[];
-  votes: { [key: string]: number }; // Track votes for each option
+  votes: Record<string, number>;
 }
 
 const ViewPoll = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
 
-
-  // Fetch all polls from the database
+  // Fetch all polls from Supabase
   useEffect(() => {
     const fetchPolls = async () => {
       const { data, error } = await supabase.from("quickpoll").select("*");
@@ -24,7 +24,6 @@ const ViewPoll = () => {
       if (error) {
         console.error("Error fetching polls:", error);
       } else {
-        // Initialize votes if not present
         const pollsWithVotes = data.map((poll) => ({
           ...poll,
           votes: poll.votes || {},
@@ -36,7 +35,7 @@ const ViewPoll = () => {
     fetchPolls();
   }, []);
 
-  // Function to handle voting
+  // Handle voting
   const handleVote = async (option: string) => {
     if (!selectedPoll) {
       alert("Please select a poll before voting.");
@@ -44,27 +43,27 @@ const ViewPoll = () => {
     }
 
     try {
-      // Update the vote count in the database
       const updatedVotes = {
         ...selectedPoll.votes,
         [option]: (selectedPoll.votes[option] || 0) + 1,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("quickpoll")
         .update({ votes: updatedVotes })
-        .eq("id", selectedPoll.id);
+        .eq("id", selectedPoll.id)
+        .select("*");
 
-      if (error) {
-        throw new Error(error.message);
+      if (error) throw new Error(error.message);
+
+      // Ensure the latest poll data is used
+      if (data && data.length > 0) {
+        const updatedPoll = data[0];
+        setPolls((prevPolls) =>
+          prevPolls.map((poll) => (poll.id === updatedPoll.id ? updatedPoll : poll))
+        );
+        setSelectedPoll(updatedPoll);
       }
-
-      // Update the local state
-      setPolls((prevPolls) =>
-        prevPolls.map((poll) =>
-          poll.id === selectedPoll.id ? { ...poll, votes: updatedVotes } : poll
-        )
-      );
 
       alert(`You voted for: ${option}`);
     } catch (error) {
@@ -73,18 +72,15 @@ const ViewPoll = () => {
     }
   };
 
-  // Function to delete a poll
+  // Handle deleting a poll
   const handleDeletePoll = async (pollId: number) => {
     try {
       const { error } = await supabase.from("quickpoll").delete().eq("id", pollId);
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      // Update the local state
       setPolls((prevPolls) => prevPolls.filter((poll) => poll.id !== pollId));
-      setSelectedPoll(null); // Clear the selected poll if it was deleted
+      setSelectedPoll(null);
 
       alert("Poll deleted successfully.");
     } catch (error) {
@@ -98,7 +94,7 @@ const ViewPoll = () => {
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
         <h1 className="text-center text-xl font-bold mb-4">Polls</h1>
 
-        {/* Display poll titles */}
+        {/* Poll List */}
         <ul className="space-y-4">
           {polls.map((poll) => (
             <li
@@ -109,7 +105,7 @@ const ViewPoll = () => {
               <span className="font-medium text-purple-900">{poll.title}</span>
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); // Prevent the li onClick from firing
+                  e.stopPropagation();
                   handleDeletePoll(poll.id);
                 }}
                 className="float-right text-red-500 hover:text-red-700"
@@ -120,34 +116,44 @@ const ViewPoll = () => {
           ))}
         </ul>
 
-        {/* Show poll details when clicked */}
+        {/* Poll Details */}
         {selectedPoll && (
           <div className="mt-6">
-            <label className="block mb-4 text-zinc-700">
-              {selectedPoll.title}
-            </label>
+            <h2 className="text-lg font-semibold text-zinc-700 mb-2">{selectedPoll.title}</h2>
+
+            {/* Total Votes */}
+            <p className="text-sm text-gray-600">
+              Total Votes:{" "}
+              {Object.values(selectedPoll.votes).reduce((acc, v) => acc + v, 0)}
+            </p>
+
             <div className="space-y-4">
-              {selectedPoll.options.map((option, index) => (
-                <div key={index} className="relative">
-                  <button
-                    onClick={() => handleVote(option)}
-                    className="w-full text-left p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors duration-200 ease-in-out"
-                  >
-                    <span className="font-medium text-purple-900">{option}</span>
-                    <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-700">
-                      {selectedPoll.votes[option] || 0} votes
-                    </span>
-                  </button>
-                  <motion.div
-                    initial={{ width: "0%" }}
-                    animate={{
-                      width: `${(selectedPoll.votes[option] || 0) * 10}%`,
-                    }}
-                    transition={{ duration: 0.5 }}
-                    className="absolute left-0 top-0 h-full bg-purple-300 rounded-lg opacity-50 z-0"
-                  />
-                </div>
-              ))}
+              {selectedPoll.options.map((option, index) => {
+                const totalVotes = Object.values(selectedPoll.votes).reduce((acc, v) => acc + v, 0);
+                const votePercentage = totalVotes > 0 ? ((selectedPoll.votes[option] || 0) / totalVotes) * 100 : 0;
+
+                return (
+                  <div key={index} className="relative">
+                    <button
+                      onClick={() => handleVote(option)}
+                      className="w-full text-left p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors duration-200 ease-in-out relative"
+                    >
+                      <span className="font-medium text-purple-900">{option}</span>
+                      <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-700">
+                        {selectedPoll.votes[option] || 0} votes
+                      </span>
+                    </button>
+
+                    {/* Progress Bar */}
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${votePercentage}%` }}
+                      transition={{ duration: 0.5 }}
+                      className="absolute left-0 top-0 h-full bg-purple-300 rounded-lg opacity-50 z-0"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
