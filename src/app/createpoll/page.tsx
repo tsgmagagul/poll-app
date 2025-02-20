@@ -1,14 +1,27 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Card, CardContent, CardTitle } from "../components/ui/card";
 import { supabase } from "../lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 
 const CreatePoll = () => {
   const [question, setQuestion] = useState<string>("");
   const [options, setOptions] = useState<string[]>([]);
   const [currentOption, setCurrentOption] = useState<string>("");
+  const router = useRouter();
 
+  // Check if the user is logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login"); // Redirect to login page if the user is not logged in
+      }
+    };
+
+    checkUser();
+  }, [router]);
   const addOption = () => {
     if (currentOption.trim()) {
       setOptions([...options, currentOption]);
