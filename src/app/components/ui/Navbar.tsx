@@ -82,7 +82,7 @@ const Navbar = () => {
               View Polls
             </Link>
             <Link
-              href="/notifications"
+              href="/notification"
               className={buttonVariants({ variant: "outline" }) + " relative"}
             >
               Notifications

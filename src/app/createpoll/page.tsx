@@ -1,32 +1,43 @@
 "use client";
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardTitle } from "../components/ui/card";
 import { supabase } from "../lib/supabaseClient";
 import { useRouter } from "next/navigation";
-
 
 const CreatePoll = () => {
   const [question, setQuestion] = useState<string>("");
   const [options, setOptions] = useState<string[]>([]);
   const [currentOption, setCurrentOption] = useState<string>("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const router = useRouter();
 
-  // Check if the user is logged in
+  // Check if the user is logged in and get user ID
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login"); // Redirect to login page if the user is not logged in
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        router.push("/login"); // Redirect to login if not logged in
+      } else {
+        setUserId(user.id); // Store user ID
       }
     };
 
     checkUser();
   }, [router]);
+
   const addOption = () => {
-    if (currentOption.trim()) {
-      setOptions([...options, currentOption]);
-      setCurrentOption("");
+    const trimmedOption = currentOption.trim();
+    if (!trimmedOption) {
+      alert("Option cannot be empty!");
+      return;
     }
+    if (options.includes(trimmedOption)) {
+      alert("Option already exists!");
+      return;
+    }
+    setOptions([...options, trimmedOption]);
+    setCurrentOption("");
   };
 
   const deleteOption = (index: number) => {
@@ -35,19 +46,29 @@ const CreatePoll = () => {
 
   const submitPoll = async (event: React.FormEvent) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
-    if (!question.trim() || options.length === 0) {
-      alert("Please enter a question and at least one option.");
+    if (!question.trim()) {
+      alert("Please enter a question.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (options.length === 0) {
+      alert("Please add at least one option.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!userId) {
+      alert("User not authenticated. Please log in again.");
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      const { error } = await supabase.from("quickpoll").insert([
-        {
-          title: question,
-          options,
-        },
-      ]);
+      const { error } = await supabase
+        .from("quickpoll")
+        .insert([{ title: question, options, user_id: userId }])
+        .select("id");
 
       if (error) throw error;
 
@@ -57,15 +78,16 @@ const CreatePoll = () => {
     } catch (error) {
       console.error("Error submitting poll:", error);
       alert("Failed to submit poll. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="p-4 min-h-screen bg-zinc-100 flex flex-col items-center justify-center">
-    
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
         <h1 className="text-center text-xl font-bold mb-6">Create New Poll</h1>
-        
+
         <input
           placeholder="Add title"
           value={question}
@@ -84,7 +106,7 @@ const CreatePoll = () => {
             onClick={addOption}
             className="bg-purple-600 text-white p-2 rounded hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            Add 
+            Add
           </button>
         </div>
 
@@ -108,10 +130,10 @@ const CreatePoll = () => {
 
           <button
             type="submit"
-            className="mt-4 p-2 bg-purple-600 text-white rounded w-full hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            disabled={isSubmitting}
+            className="mt-4 p-2 bg-purple-600 text-white rounded w-full hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-
-            Submit Poll
+            {isSubmitting ? "Submitting..." : "Submit Poll"}
           </button>
         </form>
       </div>

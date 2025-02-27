@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 interface Poll {
-  id: number;
+  id: number; // or string if using UUID
   title: string;
   options: string[]; // Ensure this is an array of strings
   votes: Record<string, number>;
-  created_by: string;
+  created_by: string; // user_id of the poll creator
 }
 
 const ViewPoll = () => {
@@ -17,25 +18,76 @@ const ViewPoll = () => {
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
 
 
-    useEffect(() => {
-      const fetchPolls = async () => {
-        const { data, error } = await supabase.from("quickpoll").select("*");
-    
-        if (error) {
-          console.error("Error fetching polls:", error);
-        } else {
-          console.log("Fetched data:", data); // Debugging line
-          const pollsWithVotes = data.map((poll) => ({
-            ...poll,
-            options: Array.isArray(poll.options) ? poll.options : JSON.parse(poll.options), // Parse if necessary
-            votes: poll.votes || {},
-          }));
-          setPolls(pollsWithVotes);
+  const router = useRouter();
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getSession();
+  
+      if (error) {
+        console.error("Error fetching session:", error);
+        return;
+      }
+  
+      const user = data?.session?.user;
+      if (!user) {
+        console.log("No user session found. Redirecting to login...");
+        router.push("/login"); // Redirect to login page
+        return;
+      }
+  
+      console.log("Logged-in User ID:", user.id); // Debugging
+    };
+  
+    fetchUser();
+  }, [router]); // ✅ Include router in the dependency array
+  
+  
+  
+  // Fetch polls and votes
+  useEffect(() => {
+    const fetchPolls = async () => {
+      const { data: polls, error: pollError } = await supabase
+        .from("quickpoll")
+        .select("*");
+
+      if (pollError) {
+        console.error("Error fetching polls:", pollError);
+        return;
+      }
+
+      // Fetch votes separately
+      const { data: votes, error: votesError } = await supabase
+        .from("votes")
+        .select("*");
+
+      if (votesError) {
+        console.error("Error fetching votes:", votesError);
+        return;
+      }
+
+      // Aggregate votes per poll
+      const voteCounts: Record<number, Record<string, number>> = {};
+      votes.forEach((vote) => {
+        if (!voteCounts[vote.poll_id]) {
+          voteCounts[vote.poll_id] = {};
         }
-      };
-    
-      fetchPolls();
-    }, []);
+        voteCounts[vote.poll_id][vote.selected_option] =
+          (voteCounts[vote.poll_id][vote.selected_option] || 0) + 1;
+      });
+
+      // Combine poll data with vote counts
+      const pollsWithVotes = polls.map((poll) => ({
+        ...poll,
+        options: Array.isArray(poll.options) ? poll.options : JSON.parse(poll.options),
+        votes: voteCounts[poll.id] || {},
+      }));
+
+      setPolls(pollsWithVotes);
+    };
+
+    fetchPolls();
+  }, []);
 
   // Subscribe to Realtime updates
   useEffect(() => {
@@ -47,7 +99,9 @@ const ViewPoll = () => {
         (payload) => {
           const updatedPoll = payload.new as Poll;
           setPolls((prevPolls) =>
-            prevPolls.map((poll) => (poll.id === updatedPoll.id ? updatedPoll : poll))
+            prevPolls.map((poll) =>
+              poll.id === updatedPoll.id ? updatedPoll : poll
+            )
           );
 
           // Notify the poll creator (if selectedPoll is the updated poll)
@@ -69,45 +123,60 @@ const ViewPoll = () => {
       alert("Please select a poll before voting.");
       return;
     }
-  
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("You must be logged in to vote.");
+      return;
+    }
+
     try {
-      // Increment the vote count for the selected option
-      const updatedVotes = {
-        ...selectedPoll.votes,
-        [option]: (selectedPoll.votes[option] || 0) + 1,
-      };
-  
-      // Update the poll in Supabase
-      const { data: updatedPollData, error: pollError } = await supabase
-        .from("quickpoll")
-        .update({ votes: updatedVotes })
-        .eq("id", selectedPoll.id)
-        .select("*");
-  
-      if (pollError) throw new Error(pollError.message);
-  
-      // Create a notification for the poll creator
+      // Insert the vote into the 'votes' table
+      const { error: voteError } = await supabase.from("votes").insert([
+        {
+          poll_id: selectedPoll.id, // Ensure this matches the database type (number or UUID)
+          user_id: user.id,
+          selected_option: option,
+        },
+      ]);
+
+      if (voteError) throw voteError;
+
+      // Retrieve the updated votes for this poll
+      const { data: votesData, error: fetchVotesError } = await supabase
+        .from("votes")
+        .select("selected_option")
+        .eq("poll_id", selectedPoll.id);
+
+      if (fetchVotesError) throw fetchVotesError;
+
+      // Calculate updated vote counts
+      const updatedVotes = votesData.reduce((acc, vote) => {
+        acc[vote.selected_option] = (acc[vote.selected_option] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Update local state with the new vote count
+      setPolls((prevPolls) =>
+        prevPolls.map((poll) =>
+          poll.id === selectedPoll.id ? { ...poll, votes: updatedVotes } : poll
+        )
+      );
+      setSelectedPoll({ ...selectedPoll, votes: updatedVotes });
+
+      // Notify poll creator
       const { error: notificationError } = await supabase
         .from("notifications")
         .insert([
           {
-            user_id: selectedPoll.created_by, // ID of the poll creator
+            user_id: selectedPoll.created_by, // Notify poll creator
             poll_id: selectedPoll.id,
             message: `You have a new vote on "${selectedPoll.title}".`,
           },
         ]);
-  
-      if (notificationError) throw new Error(notificationError.message);
-  
-      // Update the local state with the new poll data
-      if (updatedPollData && updatedPollData.length > 0) {
-        const updatedPoll = updatedPollData[0];
-        setPolls((prevPolls) =>
-          prevPolls.map((poll) => (poll.id === updatedPoll.id ? updatedPoll : poll))
-        );
-        setSelectedPoll(updatedPoll);
-      }
-  
+
+      if (notificationError) throw notificationError;
+
       alert(`You voted for: ${option}`);
     } catch (error) {
       console.error("Error submitting vote:", error);
@@ -118,7 +187,10 @@ const ViewPoll = () => {
   // Handle deleting a poll
   const handleDeletePoll = async (pollId: number) => {
     try {
-      const { error } = await supabase.from("quickpoll").delete().eq("id", pollId);
+      const { error } = await supabase
+        .from("quickpoll")
+        .delete()
+        .eq("id", pollId);
 
       if (error) throw new Error(error.message);
 
@@ -162,16 +234,25 @@ const ViewPoll = () => {
         {/* Poll Details */}
         {selectedPoll && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold text-zinc-700 mb-2">{selectedPoll.title}</h2>
+            <h2 className="text-lg font-semibold text-zinc-700 mb-2">
+              {selectedPoll.title}
+            </h2>
             <p className="text-sm text-gray-600">
-              Total Votes: {Object.values(selectedPoll.votes).reduce((acc, v) => acc + v, 0)}
+              Total Votes:{" "}
+              {Object.values(selectedPoll.votes).reduce((acc, v) => acc + v, 0)}
             </p>
 
             <div className="space-y-4">
               {Array.isArray(selectedPoll.options) ? (
                 selectedPoll.options.map((option, index) => {
-                  const totalVotes = Object.values(selectedPoll.votes).reduce((acc, v) => acc + v, 0);
-                  const votePercentage = totalVotes > 0 ? ((selectedPoll.votes[option] || 0) / totalVotes) * 100 : 0;
+                  const totalVotes = Object.values(selectedPoll.votes).reduce(
+                    (acc, v) => acc + v,
+                    0
+                  );
+                  const votePercentage =
+                    totalVotes > 0
+                      ? ((selectedPoll.votes[option] || 0) / totalVotes) * 100
+                      : 0;
 
                   return (
                     <div key={index} className="relative">
@@ -179,7 +260,9 @@ const ViewPoll = () => {
                         onClick={() => handleVote(option)}
                         className="w-full text-left p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors duration-200 ease-in-out relative"
                       >
-                        <span className="font-medium text-purple-900">{option}</span>
+                        <span className="font-medium text-purple-900">
+                          {option}
+                        </span>
                         <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-700">
                           {selectedPoll.votes[option] || 0} votes
                         </span>
